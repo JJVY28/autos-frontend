@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agencia de Autos - Clientes</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    
+    <h1>Registro de Clientes 👨‍🦰</h1>
+    <form id="cliente-form">
+        <input type="text" id="nombre" name="nombre" placeholder="Nombre" required />
+        <input type="email" id="email" name="email" placeholder="Email" required />
+        <input type="text" id="telefono" name="telefono" placeholder="Teléfono" />
+        <input type="text" id="direccion" name="direccion" placeholder="Dirección" />
+        <button type="submit">Registrar</button>
+    </form>
+
+    <h2>Lista de Clientes</h2>
+    <table id="clientes-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th>Dirección</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+<script src="frontend.js" defer></script>
+</body>
+</html>
