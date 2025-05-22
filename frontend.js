@@ -1,8 +1,10 @@
 const form = document.getElementById('cliente-form');
 const tabla = document.querySelector('#clientes-table tbody');
 
+const API_URL = 'https://autos-backend-production.up.railway.app';
+
 function cargarClientes() {
-    fetch('/clientes')
+    fetch(`${API_URL}/clientes`)
         .then(res => res.json())
         .then(data => {
 
@@ -46,7 +48,7 @@ form.addEventListener('submit', e => {
         return;
     }
 
-    fetch('/clientes', {
+    fetch(`${API_URL}/clientes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cliente)
@@ -85,7 +87,7 @@ form.addEventListener('submit', e => {
 function eliminarCliente(id) {
     if (!confirm('¿Seguro que quieres eliminar este cliente?')) return;
 
-    fetch(`/clientes/${id}`, { method: 'DELETE' })
+    fetch(`${API_URL}/clientes/${id}`, { method: 'DELETE' })
         .then(res => {
             if (!res.ok) throw new Error('Error al eliminar');
             return res.json();
