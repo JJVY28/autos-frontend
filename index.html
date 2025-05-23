@@ -9,18 +9,18 @@
 <body>
   <h1>Registro de Clientes 👨‍🦰</h1>
 
-  <form id="busqueda-form">
-    <input type="email" id="buscar-email" placeholder="Buscar por email" required />
-    <button type="submit">Buscar</button>
-  </form>
+  <div id="busqueda">
+    <input type="email" id="buscar-email" placeholder="Buscar por email" />
+    <button id="btn-buscar">Buscar</button>
+  </div>
 
   <form id="cliente-form">
-    <input type="text" id="nombre" name="nombre" placeholder="Nombre" disabled required />
-    <input type="email" id="email" name="email" placeholder="Email" disabled required />
+    <input type="text" id="nombre" name="nombre" placeholder="Nombre" required disabled />
+    <input type="email" id="email" name="email" placeholder="Email" required disabled />
     <input type="text" id="telefono" name="telefono" placeholder="Teléfono" disabled />
     <input type="text" id="direccion" name="direccion" placeholder="Dirección" disabled />
     <button type="submit" id="btn-registrar">Registrar</button>
-    <button type="button" id="btn-modificar" style="display:none;">Modificar</button>
+    <button type="button" id="btn-actualizar" style="display:none;">Modificar</button>
   </form>
 
   <h2>Lista de Clientes</h2>

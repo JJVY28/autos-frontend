@@ -73,3 +73,6 @@ button:nth-child(2) {
   background-color: #ffc107;
   color: black;
 }
+tr.duplicado {
+  background-color: #ffe6e6;
+}

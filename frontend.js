@@ -1,11 +1,13 @@
 const form = document.getElementById('cliente-form');
-const buscarForm = document.getElementById('busqueda-form');
 const tabla = document.querySelector('#clientes-table tbody');
-const btnModificar = document.getElementById('btn-modificar');
-const btnRegistrar = document.getElementById('btn-registrar');
 const API_URL = 'https://autos-backend-production.up.railway.app';
 
-let clienteActualId = null;
+const buscarInput = document.getElementById('buscar-email');
+const btnBuscar = document.getElementById('btn-buscar');
+const btnActualizar = document.getElementById('btn-actualizar');
+const btnRegistrar = document.getElementById('btn-registrar');
+
+let clienteSeleccionadoId = null;
 
 function cargarClientes() {
   fetch(`${API_URL}/clientes`)
@@ -15,6 +17,7 @@ function cargarClientes() {
       data.forEach(cliente => {
         const fila = document.createElement('tr');
         fila.dataset.email = cliente.email;
+
         fila.innerHTML = `
           <td>${cliente.id}</td>
           <td>${cliente.nombre}</td>
@@ -23,6 +26,7 @@ function cargarClientes() {
           <td>${cliente.direccion}</td>
           <td class="acciones">
             <button onclick="eliminarCliente(${cliente.id})">Eliminar</button>
+            <button onclick="cargarClienteEnFormulario(${cliente.id})">Ver</button>
           </td>
         `;
         tabla.appendChild(fila);
@@ -30,75 +34,69 @@ function cargarClientes() {
     });
 }
 
-buscarForm.addEventListener('submit', e => {
-  e.preventDefault();
-  const emailBuscado = document.getElementById('buscar-email').value.trim();
-  if (!emailBuscado) return;
+btnBuscar.addEventListener('click', () => {
+  const email = buscarInput.value.trim().toLowerCase();
+  if (!email) return alert('Ingresa un email');
 
-  fetch(`${API_URL}/clientes`)
-    .then(res => res.json())
-    .then(clientes => {
-      const cliente = clientes.find(c => c.email === emailBuscado);
+  let encontrado = false;
+  [...tabla.rows].forEach(fila => {
+    fila.classList.remove('duplicado');
+    if (fila.cells[2].textContent.toLowerCase() === email) {
+      fila.classList.add('duplicado');
+      encontrado = true;
+    }
+  });
 
-      // Reset estilos
-      [...tabla.rows].forEach(fila => fila.classList.remove('duplicado'));
-
-      if (!cliente) {
-        habilitarFormulario(true);
-        form.reset();
-        document.getElementById('email').value = emailBuscado;
-        btnRegistrar.style.display = 'inline-block';
-        btnModificar.style.display = 'none';
-        clienteActualId = null;
-        alert('Cliente no registrado, puedes agregarlo.');
-      } else {
-        const fila = [...tabla.rows].find(f => f.cells[2].textContent === emailBuscado);
-        if (fila) fila.classList.add('duplicado');
-
-        habilitarFormulario(true);
-        document.getElementById('nombre').value = cliente.nombre;
-        document.getElementById('email').value = cliente.email;
-        document.getElementById('telefono').value = cliente.telefono;
-        document.getElementById('direccion').value = cliente.direccion;
-
-        btnRegistrar.style.display = 'none';
-        btnModificar.style.display = 'inline-block';
-        clienteActualId = cliente.id;
-      }
-    });
+  if (!encontrado) {
+    habilitarCamposFormulario(true);
+    form.reset();
+    form.email.value = email;
+    btnActualizar.style.display = 'none';
+    btnRegistrar.disabled = false;
+    clienteSeleccionadoId = null;
+  } else {
+    habilitarCamposFormulario(false);
+    btnRegistrar.disabled = true;
+  }
 });
 
-function habilitarFormulario(habilitar) {
-  ['nombre', 'email', 'telefono', 'direccion'].forEach(id => {
-    document.getElementById(id).disabled = !habilitar;
-  });
+function habilitarCamposFormulario(habilitar) {
+  form.nombre.disabled = !habilitar;
+  form.email.disabled = !habilitar;
+  form.telefono.disabled = !habilitar;
+  form.direccion.disabled = !habilitar;
 }
 
 form.addEventListener('submit', e => {
   e.preventDefault();
   const cliente = obtenerDatosFormulario();
-  if (!cliente.nombre || !cliente.email) return alert('Nombre y email requeridos');
 
   fetch(`${API_URL}/clientes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(cliente)
   })
-    .then(res => res.json())
+    .then(res => {
+      if (res.status === 409) {
+        alert('El cliente ya existe');
+        return;
+      }
+      return res.json();
+    })
     .then(data => {
-      alert(data.mensaje);
-      form.reset();
-      buscarForm.reset();
-      habilitarFormulario(false);
-      cargarClientes();
+      if (data) {
+        alert('Cliente registrado');
+        form.reset();
+        cargarClientes();
+      }
     });
 });
 
-btnModificar.addEventListener('click', () => {
-  const cliente = obtenerDatosFormulario();
-  if (!clienteActualId) return alert('No hay cliente para modificar');
+btnActualizar.addEventListener('click', () => {
+  if (!clienteSeleccionadoId) return;
 
-  fetch(`${API_URL}/clientes/${clienteActualId}`, {
+  const cliente = obtenerDatosFormulario();
+  fetch(`${API_URL}/clientes/${clienteSeleccionadoId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(cliente)
@@ -107,10 +105,8 @@ btnModificar.addEventListener('click', () => {
     .then(data => {
       alert(data.mensaje);
       form.reset();
-      buscarForm.reset();
-      habilitarFormulario(false);
-      btnModificar.style.display = 'none';
-      btnRegistrar.style.display = 'inline-block';
+      habilitarCamposFormulario(false);
+      btnActualizar.style.display = 'none';
       cargarClientes();
     });
 });
@@ -125,13 +121,31 @@ function obtenerDatosFormulario() {
 }
 
 function eliminarCliente(id) {
-  if (!confirm('¿Seguro que quieres eliminar este cliente?')) return;
+  if (!confirm('¿Eliminar cliente?')) return;
 
   fetch(`${API_URL}/clientes/${id}`, { method: 'DELETE' })
     .then(res => res.json())
     .then(data => {
       alert(data.mensaje);
       cargarClientes();
+    });
+}
+
+function cargarClienteEnFormulario(id) {
+  fetch(`${API_URL}/clientes`)
+    .then(res => res.json())
+    .then(data => {
+      const cliente = data.find(c => c.id === id);
+      if (cliente) {
+        form.nombre.value = cliente.nombre;
+        form.email.value = cliente.email;
+        form.telefono.value = cliente.telefono;
+        form.direccion.value = cliente.direccion;
+        habilitarCamposFormulario(true);
+        btnActualizar.style.display = 'inline-block';
+        btnRegistrar.disabled = true;
+        clienteSeleccionadoId = id;
+      }
     });
 }
 
