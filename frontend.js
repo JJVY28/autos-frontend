@@ -7,13 +7,10 @@ function cargarClientes() {
     fetch(`${API_URL}/clientes`)
         .then(res => res.json())
         .then(data => {
-
-            console.log('Datos recibidos:', data); // <--- Agrega esto
             if (!Array.isArray(data)) {
-            alert('Error: No se pudo cargar la lista de clientes');
-            return;
-      }
-
+                alert('Error: No se pudo cargar la lista de clientes');
+                return;
+            }
 
             tabla.innerHTML = '';
             data.forEach(cliente => {
@@ -24,7 +21,9 @@ function cargarClientes() {
                     <td>${cliente.email}</td>
                     <td>${cliente.telefono}</td>
                     <td>${cliente.direccion}</td>
-                    <td><button onclick="eliminarCliente(${cliente.id})">Eliminar</button></td>
+                    <td>
+                        <button onclick="eliminarCliente(${cliente.id})">Eliminar</button>
+                    </td>
                 `;
                 tabla.appendChild(fila);
             });
@@ -57,19 +56,34 @@ form.addEventListener('submit', e => {
         if (res.status === 409) {
             return res.json().then(data => {
                 alert(data.mensaje);
-                // Resaltar el cliente duplicado en la tabla
+
+                // Limpiar clases anteriores
                 [...tabla.rows].forEach(fila => {
-                    fila.classList.remove('duplicado'); // Limpiar previos
+                    fila.classList.remove('duplicado');
+                });
+
+                // Resaltar y agregar botón Modificar
+                [...tabla.rows].forEach(fila => {
                     if (fila.cells[2].textContent === cliente.email) {
                         fila.classList.add('duplicado');
+
+                        const id = fila.cells[0].textContent;
+                        const accionesCelda = fila.cells[5];
+                        accionesCelda.innerHTML = `
+                            <button onclick="eliminarCliente(${id})">Eliminar</button>
+                            <button onclick="modificarCliente(${id})">Modificar</button>
+                        `;
                     }
                 });
+
                 throw new Error('Cliente duplicado');
             });
         }
+
         if (!res.ok) {
             throw new Error('Error en registro');
         }
+
         return res.json();
     })
     .then(data => {
@@ -97,6 +111,36 @@ function eliminarCliente(id) {
             cargarClientes();
         })
         .catch(err => alert(err.message));
+}
+
+function modificarCliente(id) {
+    const cliente = {
+        nombre: form.nombre.value.trim(),
+        email: form.email.value.trim(),
+        telefono: form.telefono.value.trim(),
+        direccion: form.direccion.value.trim()
+    };
+
+    if (!cliente.nombre || !cliente.email) {
+        alert('Nombre y Email son obligatorios');
+        return;
+    }
+
+    fetch(`${API_URL}/clientes/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cliente)
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Error al actualizar cliente');
+        return res.json();
+    })
+    .then(data => {
+        alert(data.mensaje);
+        form.reset();
+        cargarClientes();
+    })
+    .catch(err => alert(err.message));
 }
 
 cargarClientes();
