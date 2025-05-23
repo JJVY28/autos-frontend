@@ -1,11 +1,10 @@
 const form = document.getElementById('cliente-form');
 const tabla = document.querySelector('#clientes-table tbody');
-const buscarBtn = document.getElementById('buscar-btn');
-const buscarEmail = document.getElementById('buscar-email');
-
+const campoBusqueda = document.getElementById('buscar-email');
+const btnBuscar = document.getElementById('btn-buscar');
 const API_URL = 'https://autos-backend-production.up.railway.app';
 
-let clienteSeleccionado = null;
+let clienteActualId = null;
 
 function cargarClientes() {
   fetch(`${API_URL}/clientes`)
@@ -33,10 +32,55 @@ function cargarClientes() {
         tabla.appendChild(fila);
       });
     })
-    .catch(err => {
-      console.error('Error cargando clientes:', err);
-    });
+    .catch(err => console.error('Error cargando clientes:', err));
 }
+
+function limpiarCampos() {
+  form.reset();
+  clienteActualId = null;
+  form.nombre.disabled = false;
+  form.email.disabled = false;
+  form.telefono.disabled = false;
+  form.direccion.disabled = false;
+  [...tabla.rows].forEach(fila => fila.classList.remove('duplicado'));
+}
+
+document.addEventListener('click', e => {
+  if (!form.contains(e.target) && !tabla.contains(e.target)) {
+    limpiarCampos();
+  }
+});
+
+btnBuscar.addEventListener('click', () => {
+  const email = campoBusqueda.value.trim();
+  if (!email) return;
+  campoBusqueda.value = '';
+
+  fetch(`${API_URL}/clientes`)
+    .then(res => res.json())
+    .then(data => {
+      const cliente = data.find(c => c.email === email);
+      [...tabla.rows].forEach(fila => fila.classList.remove('duplicado'));
+
+      if (!cliente) {
+        alert('Cliente no registrado');
+        form.nombre.disabled = false;
+        form.email.disabled = false;
+        form.telefono.disabled = false;
+        form.direccion.disabled = false;
+        return;
+      }
+
+      const fila = [...tabla.rows].find(f => f.cells[2].textContent === email);
+      if (fila) fila.classList.add('duplicado');
+
+      form.nombre.value = cliente.nombre;
+      form.email.value = cliente.email;
+      form.telefono.value = cliente.telefono;
+      form.direccion.value = cliente.direccion;
+      clienteActualId = cliente.id;
+    });
+});
 
 form.addEventListener('submit', e => {
   e.preventDefault();
@@ -52,66 +96,61 @@ form.addEventListener('submit', e => {
     return;
   }
 
-  fetch(`${API_URL}/clientes`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(cliente)
-  })
-    .then(res => {
-      if (res.status === 409) {
-        return res.json().then(data => {
-          alert(data.mensaje);
-          limpiarFormulario();
-
-          [...tabla.rows].forEach(fila => {
-            fila.classList.remove('duplicado');
-          });
-
-          [...tabla.rows].forEach(fila => {
-            if (fila.cells[2].textContent === cliente.email) {
-              fila.classList.add('duplicado');
-            }
-          });
-
-          throw new Error('Cliente duplicado');
-        });
-      }
-
-      if (!res.ok) throw new Error('Error en registro');
-      return res.json();
+  if (clienteActualId) {
+    fetch(`${API_URL}/clientes/${clienteActualId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cliente)
     })
-    .then(data => {
-      alert(data.mensaje);
-      limpiarFormulario();
-      cargarClientes();
+      .then(res => res.json())
+      .then(data => {
+        alert(data.mensaje);
+        limpiarCampos();
+        cargarClientes();
+      });
+  } else {
+    fetch(`${API_URL}/clientes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cliente)
     })
-    .catch(err => {
-      if (err.message !== 'Cliente duplicado') {
-        alert(err.message);
-      }
-    });
+      .then(res => {
+        if (res.status === 409) {
+          return res.json().then(data => {
+            alert(data.mensaje);
+            const fila = [...tabla.rows].find(f => f.cells[2].textContent === cliente.email);
+            if (fila) fila.classList.add('duplicado');
+            throw new Error('Cliente duplicado');
+          });
+        }
+        return res.json();
+      })
+      .then(data => {
+        alert(data.mensaje);
+        limpiarCampos();
+        cargarClientes();
+      })
+      .catch(err => {
+        if (err.message !== 'Cliente duplicado') alert(err.message);
+      });
+  }
 });
 
 function eliminarCliente(id) {
   if (!confirm('¿Seguro que quieres eliminar este cliente?')) return;
 
   fetch(`${API_URL}/clientes/${id}`, { method: 'DELETE' })
-    .then(res => {
-      if (!res.ok) throw new Error('Error al eliminar');
-      return res.json();
-    })
+    .then(res => res.json())
     .then(data => {
       alert(data.mensaje);
-      limpiarFormulario();
+      limpiarCampos();
       cargarClientes();
-    })
-    .catch(err => alert(err.message));
+    });
 }
 
 function verCliente(id) {
-  if (clienteSeleccionado === id) {
-    limpiarFormulario();
-    clienteSeleccionado = null;
+  if (clienteActualId === id) {
+    limpiarCampos();
     return;
   }
 
@@ -125,62 +164,16 @@ function verCliente(id) {
       form.email.value = cliente.email;
       form.telefono.value = cliente.telefono;
       form.direccion.value = cliente.direccion;
-      clienteSeleccionado = id;
+      clienteActualId = cliente.id;
 
       [...tabla.rows].forEach(fila => {
-        fila.classList.remove('duplicado');
         if (parseInt(fila.cells[0].textContent) === id) {
           fila.classList.add('duplicado');
+        } else {
+          fila.classList.remove('duplicado');
         }
       });
     });
-}
-
-buscarBtn.addEventListener('click', () => {
-  const email = buscarEmail.value.trim().toLowerCase();
-  if (!email) return;
-
-  fetch(`${API_URL}/clientes`)
-    .then(res => res.json())
-    .then(data => {
-      limpiarFormulario();
-      buscarEmail.value = '';
-
-      const cliente = data.find(c => c.email.toLowerCase() === email);
-
-      [...tabla.rows].forEach(fila => {
-        fila.classList.remove('duplicado');
-      });
-
-      if (!cliente) {
-        alert('Cliente no registrado');
-        form.nombre.disabled = false;
-        form.email.disabled = false;
-        form.telefono.disabled = false;
-        form.direccion.disabled = false;
-        return;
-      }
-
-      [...tabla.rows].forEach(fila => {
-        if (fila.cells[2].textContent.toLowerCase() === email) {
-          fila.classList.add('duplicado');
-        }
-      });
-    });
-});
-
-function limpiarFormulario() {
-  form.reset();
-  clienteSeleccionado = null;
-  form.nombre.disabled = false;
-  form.email.disabled = false;
-  form.telefono.disabled = false;
-  form.direccion.disabled = false;
-
-  [...tabla.rows].forEach(fila => {
-    fila.classList.remove('duplicado');
-  });
 }
 
 cargarClientes();
-s
