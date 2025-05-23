@@ -1,20 +1,21 @@
 const form = document.getElementById('cliente-form');
 const tabla = document.querySelector('#clientes-table tbody');
+const btnBuscar = document.getElementById('btn-buscar');
+const emailBuscar = document.getElementById('email-buscar');
+const btnModificar = document.getElementById('btn-modificar');
+const btnRegistrar = document.getElementById('btn-registrar');
 
 const API_URL = 'https://autos-backend-production.up.railway.app';
+let clienteActualId = null;
 
 function cargarClientes() {
   fetch(`${API_URL}/clientes`)
     .then(res => res.json())
     .then(data => {
-      if (!Array.isArray(data)) {
-        alert('Error: No se pudo cargar la lista de clientes');
-        return;
-      }
-
       tabla.innerHTML = '';
       data.forEach(cliente => {
         const fila = document.createElement('tr');
+        fila.setAttribute('data-id', cliente.id);
         fila.innerHTML = `
           <td>${cliente.id}</td>
           <td>${cliente.nombre}</td>
@@ -27,11 +28,54 @@ function cargarClientes() {
         `;
         tabla.appendChild(fila);
       });
-    })
-    .catch(err => {
-      console.error('Error cargando clientes:', err);
     });
 }
+
+function limpiarFormulario() {
+  form.nombre.value = '';
+  form.email.value = '';
+  form.telefono.value = '';
+  form.direccion.value = '';
+  clienteActualId = null;
+  [...form.elements].forEach(el => el.disabled = true);
+  btnRegistrar.disabled = true;
+  btnModificar.style.display = 'none';
+  [...tabla.rows].forEach(f => f.classList.remove('duplicado'));
+}
+
+btnBuscar.addEventListener('click', () => {
+  const email = emailBuscar.value.trim();
+  if (!email) return alert('Ingresa un correo para buscar');
+
+  fetch(`${API_URL}/clientes`)
+    .then(res => res.json())
+    .then(clientes => {
+      const encontrado = clientes.find(c => c.email === email);
+      limpiarFormulario();
+
+      if (encontrado) {
+        const fila = [...tabla.rows].find(f => f.cells[2].textContent === email);
+        if (fila) fila.classList.add('duplicado');
+
+        form.nombre.value = encontrado.nombre;
+        form.email.value = encontrado.email;
+        form.telefono.value = encontrado.telefono;
+        form.direccion.value = encontrado.direccion;
+
+        [...form.elements].forEach(el => el.disabled = false);
+        form.email.disabled = true;
+
+        clienteActualId = encontrado.id;
+        btnModificar.style.display = 'inline-block';
+        btnRegistrar.disabled = true;
+      } else {
+        [...form.elements].forEach(el => el.disabled = false);
+        form.email.value = email;
+        btnRegistrar.disabled = false;
+        btnModificar.style.display = 'none';
+      }
+    });
+});
 
 form.addEventListener('submit', e => {
   e.preventDefault();
@@ -42,75 +86,21 @@ form.addEventListener('submit', e => {
     direccion: form.direccion.value.trim()
   };
 
-  if (!cliente.nombre || !cliente.email) {
-    alert('Nombre y Email son obligatorios');
-    return;
-  }
-
   fetch(`${API_URL}/clientes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(cliente)
   })
-    .then(res => {
-      if (res.status === 409) {
-        return res.json().then(data => {
-          alert(data.mensaje);
-
-          // Limpiar clases anteriores
-          [...tabla.rows].forEach(fila => {
-            fila.classList.remove('duplicado');
-          });
-
-          // Resaltar y agregar botón Modificar
-          [...tabla.rows].forEach(fila => {
-            if (fila.cells[2].textContent === cliente.email) {
-              fila.classList.add('duplicado');
-
-              const id = fila.cells[0].textContent;
-              const accionesCelda = fila.querySelector('.acciones');
-              accionesCelda.innerHTML = `
-                <button onclick="eliminarCliente(${id})">Eliminar</button>
-                <button onclick="modificarCliente(${id})">Modificar</button>
-              `;
-            }
-          });
-
-          throw new Error('Cliente duplicado');
-        });
-      }
-
-      if (!res.ok) throw new Error('Error en registro');
-      return res.json();
-    })
+    .then(res => res.json())
     .then(data => {
       alert(data.mensaje);
-      form.reset();
+      limpiarFormulario();
       cargarClientes();
     })
-    .catch(err => {
-      if (err.message !== 'Cliente duplicado') {
-        alert(err.message);
-      }
-    });
+    .catch(err => alert('Error al registrar cliente'));
 });
 
-function eliminarCliente(id) {
-  if (!confirm('¿Seguro que quieres eliminar este cliente?')) return;
-
-  fetch(`${API_URL}/clientes/${id}`, { method: 'DELETE' })
-    .then(res => {
-      if (!res.ok) throw new Error('Error al eliminar');
-      return res.json();
-    })
-    .then(data => {
-      alert(data.mensaje);
-      cargarClientes();
-    })
-    .catch(err => alert(err.message));
-}
-
-function modificarCliente(id) {
+btnModificar.addEventListener('click', () => {
   const cliente = {
     nombre: form.nombre.value.trim(),
     email: form.email.value.trim(),
@@ -118,26 +108,28 @@ function modificarCliente(id) {
     direccion: form.direccion.value.trim()
   };
 
-  if (!cliente.nombre || !cliente.email) {
-    alert('Nombre y Email son obligatorios');
-    return;
-  }
-
-  fetch(`${API_URL}/clientes/${id}`, {
+  fetch(`${API_URL}/clientes/${clienteActualId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(cliente)
   })
-    .then(res => {
-      if (!res.ok) throw new Error('Error al actualizar cliente');
-      return res.json();
-    })
+    .then(res => res.json())
     .then(data => {
       alert(data.mensaje);
-      form.reset();
+      limpiarFormulario();
       cargarClientes();
     })
-    .catch(err => alert(err.message));
+    .catch(err => alert('Error al modificar cliente'));
+});
+
+function eliminarCliente(id) {
+  if (!confirm('¿Seguro que quieres eliminar este cliente?')) return;
+  fetch(`${API_URL}/clientes/${id}`, { method: 'DELETE' })
+    .then(res => res.json())
+    .then(data => {
+      alert(data.mensaje);
+      cargarClientes();
+    });
 }
 
 cargarClientes();

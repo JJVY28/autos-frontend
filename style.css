@@ -8,6 +8,30 @@ h1, h2 {
   color: #333;
 }
 
+#busqueda {
+  margin-bottom: 10px;
+}
+
+#busqueda input {
+  padding: 8px;
+  margin-right: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+#busqueda button {
+  padding: 8px 15px;
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#busqueda button:hover {
+  background-color: #138496;
+}
+
 form {
   margin-bottom: 20px;
   background: white;
@@ -67,9 +91,4 @@ button:hover {
 button:nth-child(1) {
   background-color: #dc3545;
   color: white;
-}
-
-button:nth-child(2) {
-  background-color: #ffc107;
-  color: black;
 }
