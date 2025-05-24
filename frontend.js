@@ -47,6 +47,8 @@ btnBuscar.addEventListener('click', () => {
     }
   });
 
+  buscarInput.value = ''; // Limpia el campo de búsqueda
+
   if (!encontrado) {
     habilitarCamposFormulario(true);
     form.reset();
@@ -108,6 +110,7 @@ btnActualizar.addEventListener('click', () => {
       habilitarCamposFormulario(false);
       btnActualizar.style.display = 'none';
       cargarClientes();
+      clienteSeleccionadoId = null;
     });
 });
 
@@ -132,6 +135,16 @@ function eliminarCliente(id) {
 }
 
 function cargarClienteEnFormulario(id) {
+  // Si ya está seleccionado y das click de nuevo, se limpia
+  if (clienteSeleccionadoId === id) {
+    form.reset();
+    habilitarCamposFormulario(false);
+    btnActualizar.style.display = 'none';
+    btnRegistrar.disabled = false;
+    clienteSeleccionadoId = null;
+    return;
+  }
+
   fetch(`${API_URL}/clientes`)
     .then(res => res.json())
     .then(data => {
@@ -148,5 +161,20 @@ function cargarClienteEnFormulario(id) {
       }
     });
 }
+
+// Si haces click fuera del formulario o tabla, se limpia el formulario
+document.addEventListener('click', (e) => {
+  const dentroDeForm = form.contains(e.target);
+  const dentroDeTabla = tabla.parentElement.contains(e.target);
+  const dentroDeBuscar = buscarInput.contains(e.target) || btnBuscar.contains(e.target);
+
+  if (!dentroDeForm && !dentroDeTabla && !dentroDeBuscar) {
+    form.reset();
+    habilitarCamposFormulario(false);
+    btnActualizar.style.display = 'none';
+    btnRegistrar.disabled = false;
+    clienteSeleccionadoId = null;
+  }
+});
 
 cargarClientes();
