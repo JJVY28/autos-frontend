@@ -39,6 +39,7 @@ btnBuscar.addEventListener('click', () => {
   if (!email) return alert('Ingresa un email');
 
   let encontrado = false;
+
   [...tabla.rows].forEach(fila => {
     fila.classList.remove('duplicado');
     if (fila.cells[2].textContent.toLowerCase() === email) {
@@ -47,7 +48,7 @@ btnBuscar.addEventListener('click', () => {
     }
   });
 
-  buscarInput.value = ''; // ✅ Limpia el campo de búsqueda
+  buscarInput.value = ''; // ✅ Se limpia el campo de búsqueda SIEMPRE
 
   if (!encontrado) {
     habilitarCamposFormulario(true);
