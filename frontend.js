@@ -183,4 +183,3 @@ function limpiarFormulario() {
 }
 
 cargarClientes();
-s
