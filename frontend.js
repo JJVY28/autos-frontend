@@ -47,7 +47,7 @@ btnBuscar.addEventListener('click', () => {
     }
   });
 
-  buscarInput.value = ''; // Limpia el campo de búsqueda
+  buscarInput.value = ''; // ✅ Limpia el campo de búsqueda
 
   if (!encontrado) {
     habilitarCamposFormulario(true);
@@ -89,6 +89,7 @@ form.addEventListener('submit', e => {
       if (data) {
         alert('Cliente registrado');
         form.reset();
+        limpiarEstadoFormulario();
         cargarClientes();
       }
     });
@@ -107,10 +108,8 @@ btnActualizar.addEventListener('click', () => {
     .then(data => {
       alert(data.mensaje);
       form.reset();
-      habilitarCamposFormulario(false);
-      btnActualizar.style.display = 'none';
+      limpiarEstadoFormulario();
       cargarClientes();
-      clienteSeleccionadoId = null;
     });
 });
 
@@ -135,13 +134,10 @@ function eliminarCliente(id) {
 }
 
 function cargarClienteEnFormulario(id) {
-  // Si ya está seleccionado y das click de nuevo, se limpia
   if (clienteSeleccionadoId === id) {
+    // ✅ Si ya está seleccionado y se vuelve a hacer clic, se limpia
     form.reset();
-    habilitarCamposFormulario(false);
-    btnActualizar.style.display = 'none';
-    btnRegistrar.disabled = false;
-    clienteSeleccionadoId = null;
+    limpiarEstadoFormulario();
     return;
   }
 
@@ -162,7 +158,7 @@ function cargarClienteEnFormulario(id) {
     });
 }
 
-// Si haces click fuera del formulario o tabla, se limpia el formulario
+// ✅ Limpieza global si haces clic fuera del formulario o tabla
 document.addEventListener('click', (e) => {
   const dentroDeForm = form.contains(e.target);
   const dentroDeTabla = tabla.parentElement.contains(e.target);
@@ -170,11 +166,16 @@ document.addEventListener('click', (e) => {
 
   if (!dentroDeForm && !dentroDeTabla && !dentroDeBuscar) {
     form.reset();
-    habilitarCamposFormulario(false);
-    btnActualizar.style.display = 'none';
-    btnRegistrar.disabled = false;
-    clienteSeleccionadoId = null;
+    limpiarEstadoFormulario();
   }
 });
+
+// ✅ Función para limpiar estado de formulario y botones
+function limpiarEstadoFormulario() {
+  habilitarCamposFormulario(false);
+  btnActualizar.style.display = 'none';
+  btnRegistrar.disabled = false;
+  clienteSeleccionadoId = null;
+}
 
 cargarClientes();
