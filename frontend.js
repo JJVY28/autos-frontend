@@ -179,4 +179,4 @@ function limpiarEstadoFormulario() {
   clienteSeleccionadoId = null;
 }
 
-cargarClientes();
+cargarClientes
