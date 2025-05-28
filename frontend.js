@@ -178,5 +178,8 @@ function limpiarEstadoFormulario() {
   btnRegistrar.disabled = false;
   clienteSeleccionadoId = null;
 }
-
-cargarClientes
+//Inicialización
+window.addEventListener('DOMContentLoaded', () => {
+ 
+cargarClientes();
+});
