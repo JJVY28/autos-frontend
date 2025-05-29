@@ -13,6 +13,11 @@ function cargarClientes() {
   fetch(`${API_URL}/clientes`)
     .then(res => res.json())
     .then(data => {
+      if (!Array.isArray(data)) {
+        console.error("Respuesta inesperada del servidor:", data);
+        return;
+      }
+
       tabla.innerHTML = '';
       data.forEach(cliente => {
         const fila = document.createElement('tr');
@@ -31,7 +36,8 @@ function cargarClientes() {
         `;
         tabla.appendChild(fila);
       });
-    });
+    })
+    .catch(err => console.error("Error cargando clientes:", err));
 }
 
 btnBuscar.addEventListener('click', () => {
@@ -48,7 +54,7 @@ btnBuscar.addEventListener('click', () => {
     }
   });
 
-  buscarInput.value = ''; // ✅ Se limpia el campo de búsqueda SIEMPRE
+  buscarInput.value = '';
 
   if (!encontrado) {
     habilitarCamposFormulario(true);
@@ -74,6 +80,11 @@ form.addEventListener('submit', e => {
   e.preventDefault();
   const cliente = obtenerDatosFormulario();
 
+  if (!cliente.nombre || !cliente.email) {
+    alert("Nombre y correo son obligatorios");
+    return;
+  }
+
   fetch(`${API_URL}/clientes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -84,6 +95,9 @@ form.addEventListener('submit', e => {
         alert('El cliente ya existe');
         return;
       }
+      if (!res.ok) {
+        throw new Error("Error al registrar cliente");
+      }
       return res.json();
     })
     .then(data => {
@@ -93,13 +107,15 @@ form.addEventListener('submit', e => {
         limpiarEstadoFormulario();
         cargarClientes();
       }
-    });
+    })
+    .catch(err => console.error("Error al registrar:", err));
 });
 
 btnActualizar.addEventListener('click', () => {
   if (!clienteSeleccionadoId) return;
 
   const cliente = obtenerDatosFormulario();
+
   fetch(`${API_URL}/clientes/${clienteSeleccionadoId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -136,7 +152,6 @@ function eliminarCliente(id) {
 
 function cargarClienteEnFormulario(id) {
   if (clienteSeleccionadoId === id) {
-    // ✅ Si ya está seleccionado y se vuelve a hacer clic, se limpia
     form.reset();
     limpiarEstadoFormulario();
     return;
@@ -159,7 +174,6 @@ function cargarClienteEnFormulario(id) {
     });
 }
 
-// ✅ Limpieza global si haces clic fuera del formulario o tabla
 document.addEventListener('click', (e) => {
   const dentroDeForm = form.contains(e.target);
   const dentroDeTabla = tabla.parentElement.contains(e.target);
@@ -171,15 +185,13 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// ✅ Función para limpiar estado de formulario y botones
 function limpiarEstadoFormulario() {
   habilitarCamposFormulario(false);
   btnActualizar.style.display = 'none';
   btnRegistrar.disabled = false;
   clienteSeleccionadoId = null;
 }
-//Inicialización
+
 window.addEventListener('DOMContentLoaded', () => {
- 
-cargarClientes();
+  cargarClientes();
 });
